@@ -1,82 +1,73 @@
-from fastapi import FastAPI, UploadFile, File, Form
-import shutil
-import os
+from fastapi import FastAPI, UploadFile, Form
+from typing import List
 
-from utils.parser import extract_text_from_file
-from utils.extractor import extract_info
+from utils.parser import extract_text_from_file, extract_skills
 from utils.scorer import calculate_score
-from utils.recommender import generate_recommendations
+from utils.recommender import get_recommendations
+from utils.ranker import rank_resumes
+from utils.llm_feedback import generate_feedback
 
 app = FastAPI()
 
-# ---------------- HOME ----------------
-@app.get("/")
-def home():
-    return {"message": "AI Resume Analyzer Running 🚀"}
+
+def detect_role(text):
+    text = text.lower()
+
+    if "sales" in text or "marketing" in text:
+        return "Sales / Marketing"
+    elif "machine learning" in text or "ai" in text:
+        return "AI / ML Engineer"
+    elif "finance" in text or "bank" in text:
+        return "Finance / Banking"
+    elif "doctor" in text or "medical" in text:
+        return "Healthcare"
+    return "General Profile"
 
 
-# ---------------- MAIN API ----------------
 @app.post("/analyze/")
 async def analyze_resume(
-    file: UploadFile = File(...),
+    files: List[UploadFile],
     job_description: str = Form(...)
 ):
-    try:
-        # ---------------- SAVE FILE ----------------
-        temp_file_path = f"temp_{file.filename}"
-        with open(temp_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+    results = []
 
-        # ---------------- PARSE RESUME ----------------
-        resume_text = extract_text_from_file(temp_file_path)
+    job_skills = [s.strip().lower() for s in job_description.split(",")]
 
-        # ---------------- EXTRACT INFO ----------------
-        extracted_data = extract_info(resume_text)
+    for file in files:
+        text = extract_text_from_file(file)
+        resume_skills = extract_skills(text)
 
-        # ---------------- PROCESS JOB DESCRIPTION ----------------
-        job_skills = [skill.strip().lower() for skill in job_description.split(",")]
-
-        # ---------------- CALCULATE SCORE ----------------
-        score, matched_skills, missing_skills = calculate_score(
-            extracted_data,
+        score, matched, missing = calculate_score(
+            resume_skills,
             job_skills
         )
 
-        # ---------------- RECOMMENDATIONS ----------------
-        recommendations = generate_recommendations(missing_skills)
+        recommendations = get_recommendations(missing)
 
-        # ---------------- EXPLANATION (IMPROVED) ----------------
-        explanation = f"""
-Candidate matched {len(matched_skills)} out of {len(job_skills)} required skills.
+        feedback = generate_feedback(
+            {
+                "matched_skills": matched,
+                "missing_skills": missing,
+                "score": score
+            },
+            job_description
+        )
 
-Matched Skills: {', '.join(matched_skills) if matched_skills else 'None'}
+        role = detect_role(text)
 
-Missing Skills: {', '.join(missing_skills) if missing_skills else 'None'}
-
-Experience Level: {extracted_data.get('Experience', 0)} years
-
-Projects Done:
-{chr(10).join(extracted_data.get('Projects', [])) if extracted_data.get('Projects') else 'No projects listed'}
-
-Final Score: {score}%
-
-This score is calculated based on skill matching, experience, and project relevance.
-"""
-
-        # ---------------- RESPONSE ----------------
-        return {
-            "extracted_data": extracted_data,
+        results.append({
+            "name": file.filename,
             "score": score,
-            "matched_skills": matched_skills,
-            "missing_skills": missing_skills,
+            "matched_skills": matched,
+            "missing_skills": missing,
             "recommendations": recommendations,
-            "explanation": explanation
-        }
+            "feedback": feedback,
+            "predicted_role": role
+        })
 
-    except Exception as e:
-        return {"error": str(e)}
+    ranked = rank_resumes(results)
 
-    finally:
-        # ---------------- CLEANUP ----------------
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+    return {
+        "ranked_results": ranked,
+        "top_candidate": ranked[0] if ranked else None
+    }

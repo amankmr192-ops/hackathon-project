@@ -1,29 +1,36 @@
-import os
-import PyPDF2
-import docx
+import fitz
+import re
 
-def extract_text_from_file(file_path: str) -> str:
+# common skills database (expandable)
+SKILL_DB = [
+    "python", "java", "c++", "machine learning", "ai", "deep learning",
+    "nlp", "data science", "docker", "kubernetes",
+    "sales", "marketing", "communication", "management",
+    "finance", "banking", "accounting",
+    "html", "css", "javascript", "react",
+    "project management", "leadership"
+]
+
+def extract_text_from_file(file):
     text = ""
 
-    # PDF
-    if file_path.endswith(".pdf"):
-        with open(file_path, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
-            for page in reader.pages:
-                text += page.extract_text() or ""
-
-    # DOCX
-    elif file_path.endswith(".docx"):
-        doc = docx.Document(file_path)
-        for para in doc.paragraphs:
-            text += para.text + "\n"
-
-    # TXT
-    elif file_path.endswith(".txt"):
-        with open(file_path, "r", encoding="utf-8") as f:
-            text = f.read()
-
+    if file.filename.endswith(".pdf"):
+        pdf = fitz.open(stream=file.file.read(), filetype="pdf")
+        for page in pdf:
+            text += page.get_text()
     else:
-        raise ValueError("Unsupported file format")
+        text = file.file.read().decode("utf-8")
 
-    return text
+    return text.lower()
+
+
+def extract_skills(text):
+
+    found_skills = []
+
+    for skill in SKILL_DB:
+        pattern = r"\b" + re.escape(skill) + r"\b"
+        if re.search(pattern, text):
+            found_skills.append(skill)
+
+    return list(set(found_skills))

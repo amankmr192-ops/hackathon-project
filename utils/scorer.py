@@ -1,19 +1,28 @@
-def calculate_score(extracted_data, job_skills):
-    resume_skills = [skill.lower() for skill in extracted_data.get("Skills", [])]
+from utils.semantic import semantic_match
 
-    matched_skills = []
-    missing_skills = []
+def calculate_score(resume_skills, job_skills):
+    """
+    Calculates match score between resume skills and job skills
+    using semantic similarity.
+    """
 
-    for skill in job_skills:
-        if skill in resume_skills:
-            matched_skills.append(skill)
-        else:
-            missing_skills.append(skill)
+    # Safety: handle empty inputs
+    if not resume_skills:
+        return 0, [], job_skills
+
+    if not job_skills:
+        return 0, [], []
+
+    # Semantic matching
+    matched_skills, missing_skills = semantic_match(
+        resume_skills,
+        job_skills
+    )
 
     # Score calculation
-    if len(job_skills) == 0:
-        score = 0
-    else:
-        score = int((len(matched_skills) / len(job_skills)) * 100)
+    total_required = len(job_skills)
+    matched_count = len(matched_skills)
+
+    score = int((matched_count / total_required) * 100)
 
     return score, matched_skills, missing_skills

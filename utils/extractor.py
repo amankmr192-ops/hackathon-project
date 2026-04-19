@@ -1,60 +1,31 @@
-from langchain_mistralai import ChatMistralAI
-from langchain_core.prompts import ChatPromptTemplate
-from dotenv import load_dotenv
-import json
 import re
 
-load_dotenv()
+def extract_info(text):
+    text = text.lower()
 
-llm = ChatMistralAI(
-    model="mistral-medium",
-    temperature=0.2
-)
+    # Common skill keywords (multi-domain)
+    skill_keywords = [
+        # Tech
+        "python", "java", "machine learning", "ai", "docker", "sql",
+        "html", "css", "javascript", "react", "node",
 
-def clean_json_output(content: str):
-    content = re.sub(r"```json|```", "", content)
-    return content.strip()
+        # Sales / Management
+        "sales", "marketing", "lead generation", "crm", "negotiation",
+        "communication", "client handling", "business development",
 
-def extract_info(text: str):
+        # Finance
+        "finance", "accounting", "banking", "financial analysis",
 
-    prompt = ChatPromptTemplate.from_template("""
-You are a strict JSON generator.
+        # General
+        "problem solving", "teamwork", "leadership"
+    ]
 
-Extract structured information from the resume.
+    found_skills = []
 
-Return ONLY valid JSON.
-Do NOT include explanations, markdown, or extra text.
+    for skill in skill_keywords:
+        if skill in text:
+            found_skills.append(skill)
 
-Format:
-{{
-  "Skills": ["skill1", "skill2"],
-  "Experience": 0,
-  "Projects": ["project1", "project2"]
-}}
-
-Rules:
-- Skills must be a list of strings
-- Experience must be a number (years)
-- Projects must be a list
-- If something is missing, return empty list or 0
-
-Resume:
-{text}
-""")
-
-    try:
-        chain = prompt | llm
-        response = chain.invoke({"text": text})
-
-        cleaned = clean_json_output(response.content)
-
-        data = json.loads(cleaned)
-
-        return data
-
-    except Exception as e:
-        return {
-            "error": "Extraction failed",
-            "details": str(e),
-            "raw_output": response.content if 'response' in locals() else None
-        }
+    return {
+        "Skills": found_skills
+    }
