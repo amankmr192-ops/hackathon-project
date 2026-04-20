@@ -1,21 +1,21 @@
-# 🚀 AI Resume Analyzer
+#  AI Resume Analyzer
 
 An AI-powered Resume Analyzer that evaluates resumes against job descriptions and provides smart insights.
 
 ---
 
-## 🔥 Features
+##  Features
 
-- 📄 Resume Parsing (PDF, DOCX, TXT)
-- 🎯 Skill Matching (Matched vs Missing)
-- 📊 Match Score Calculation
-- 💡 Smart Recommendations (per skill)
-- 🧠 Detailed Explanation
-- 🌐 Works for ANY domain (Tech, Sales, Management, etc.)
+- 📄Resume Parsing (PDF, DOCX, TXT)
+-  Skill Matching (Matched vs Missing)
+-  Match Score Calculation
+-  Smart Recommendations (per skill)
+-  Detailed Explanation
+-  Works for ANY domain (Tech, Sales, Management, etc.)
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 - **Frontend:** Streamlit  
 - **Backend:** FastAPI  
@@ -24,7 +24,7 @@ An AI-powered Resume Analyzer that evaluates resumes against job descriptions an
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 1. Upload resume  
 2. Enter job description (skills)  
@@ -36,8 +36,8 @@ An AI-powered Resume Analyzer that evaluates resumes against job descriptions an
 
 ---
 
-## ▶️ Run Locally
+## Run Locally
 
-### 1️⃣ Install dependencies
+###  Install dependencies
 ```bash
 pip install -r requirements.txt
